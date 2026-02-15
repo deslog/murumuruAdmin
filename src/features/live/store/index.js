@@ -128,6 +128,7 @@ export const useLiveStore = defineStore('live', () => {
       cart.push({
         productId: product.id,
         productName: product.name,
+        option: product.option,
         price: product.price,
         qty: quantityDraft.value,
         subtotal: product.price * quantityDraft.value,

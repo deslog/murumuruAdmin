@@ -12,7 +12,7 @@
         @click="handleSelectProduct(product.id)"
       >
         <div class="product-info">
-          <h3>{{ product.name }}</h3>
+          <h3>{{ product.name }} - {{ product.option }}</h3>
           <p class="product-price">{{ formatPrice(product.price) }}원</p>
           <p class="product-stock">재고: {{ product.stock }}개</p>
         </div>

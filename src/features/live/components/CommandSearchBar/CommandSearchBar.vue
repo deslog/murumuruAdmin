@@ -12,7 +12,20 @@
           placeholder="/고객ID 입력 후 Enter"
           class="search-input"
           @keyup.enter="handleCommand"
+          @input="handleInputChange"
         />
+        <!-- 자동완성 드롭다운 -->
+        <div v-if="showAutocomplete && filteredCustomers.length > 0" class="autocomplete-dropdown">
+          <div
+            v-for="customer in filteredCustomers"
+            :key="customer.id"
+            class="autocomplete-item"
+            @click="selectCustomerFromAutocomplete(customer.id)"
+          >
+            <span class="customer-id">{{ customer.id }}</span>
+            <span class="customer-info">{{ customer.itemCount }}개 · {{ formatPrice(customer.total) }}원</span>
+          </div>
+        </div>
       </div>
 
       <!-- 선택 영역 -->
@@ -27,7 +40,7 @@
           </div>
           <div v-if="liveStore.selectedProduct" class="info-row">
             <span class="label">상품:</span>
-            <span class="value">{{ liveStore.selectedProduct.name }}</span>
+            <span class="value">{{ liveStore.selectedProduct.name }} - {{ liveStore.selectedProduct.option }}</span>
           </div>
           <div v-if="liveStore.selectedProduct" class="info-row">
             <span class="label">가격:</span>
@@ -67,7 +80,7 @@
               class="cart-item"
             >
               <div class="item-info">
-                <p class="item-name">{{ item.productName }}</p>
+                <p class="item-name">{{ item.productName }} - {{ item.option }}</p>
                 <p class="item-detail">
                   {{ formatPrice(item.price) }}원 × {{ item.qty }}개
                 </p>
@@ -91,12 +104,44 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useLiveStore } from '@/features/live/store'
 import { formatPrice } from '@/shared/utils/format'
 
 const liveStore = useLiveStore()
 const commandInput = ref('')
+const showAutocomplete = ref(false)
+
+// 자동완성용 필터링된 고객 목록
+const filteredCustomers = computed(() => {
+  if (!commandInput.value.startsWith('/')) {
+    return []
+  }
+  
+  const searchTerm = commandInput.value.substring(1).toLowerCase()
+  if (!searchTerm) {
+    return liveStore.confirmedCustomers
+  }
+  
+  return liveStore.confirmedCustomers.filter(customer => 
+    customer.id.toLowerCase().includes(searchTerm)
+  )
+})
+
+const handleInputChange = () => {
+  // /로 시작하면 자동완성 표시
+  if (commandInput.value.startsWith('/')) {
+    showAutocomplete.value = true
+  } else {
+    showAutocomplete.value = false
+  }
+}
+
+const selectCustomerFromAutocomplete = (customerId) => {
+  liveStore.selectCustomer(customerId)
+  commandInput.value = ''
+  showAutocomplete.value = false
+}
 
 const handleCommand = () => {
   const input = commandInput.value.trim()
@@ -107,6 +152,7 @@ const handleCommand = () => {
     if (customerId) {
       liveStore.selectCustomer(customerId)
       commandInput.value = ''
+      showAutocomplete.value = false
     }
   }
 }
@@ -114,7 +160,6 @@ const handleCommand = () => {
 const handleConfirm = () => {
   const success = liveStore.addToCart()
   if (success) {
-    // 확정 성공 시 입력창 초기화
     commandInput.value = ''
   } else {
     alert('고객과 상품을 먼저 선택해주세요.')
@@ -160,6 +205,7 @@ const handleRemoveItem = (productId) => {
 
 .search-section {
   width: 100%;
+  position: relative;
 }
 
 .search-input {
@@ -174,6 +220,49 @@ const handleRemoveItem = (productId) => {
 
 .search-input:focus {
   border-color: var(--color-primary);
+}
+
+.autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: var(--spacing-xs);
+  background: var(--bg-primary);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.autocomplete-item {
+  padding: var(--spacing-sm) var(--spacing-md);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.autocomplete-item:hover {
+  background: var(--bg-secondary);
+}
+
+.customer-id {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.customer-info {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
 }
 
 .selection-section {
