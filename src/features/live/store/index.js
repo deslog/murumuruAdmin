@@ -35,11 +35,15 @@ export const useLiveStore = defineStore('live', () => {
   const confirmedCustomers = computed(() => {
     return Object.entries(cartsByCustomer.value)
       .filter(([_, cart]) => cart.length > 0)
-      .map(([customerId, cart]) => ({
-        id: customerId,
-        total: cart.reduce((sum, item) => sum + item.subtotal, 0),
-        itemCount: cart.reduce((sum, item) => sum + item.qty, 0),
-      }))
+      .map(([customerId, cart]) => {
+        const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0)
+        const shippingFee = subtotal > 0 && subtotal < 100000 ? 3500 : 0
+        return {
+          id: customerId,
+          total: subtotal + shippingFee,
+          itemCount: cart.reduce((sum, item) => sum + item.qty, 0),
+        }
+      })
   })
 
   const currentCart = computed(() => {
@@ -47,8 +51,17 @@ export const useLiveStore = defineStore('live', () => {
     return cartsByCustomer.value[selectedCustomerId.value] || []
   })
 
-  const currentCartTotal = computed(() => {
+  const currentCartSubtotal = computed(() => {
     return currentCart.value.reduce((sum, item) => sum + item.subtotal, 0)
+  })
+
+  const currentCartShippingFee = computed(() => {
+    const subtotal = currentCartSubtotal.value
+    return subtotal > 0 && subtotal < 100000 ? 3500 : 0
+  })
+
+  const currentCartTotal = computed(() => {
+    return currentCartSubtotal.value + currentCartShippingFee.value
   })
 
   // ===== 라방 목록 액션 =====
@@ -213,12 +226,25 @@ export const useLiveStore = defineStore('live', () => {
 입니다.`
 
     // 상품 목록 생성
-    const itemsText = cart.map(item => 
+    const itemsList = cart.map(item => 
       `${item.productName} (${item.option}) ${item.qty}개 ${item.price.toLocaleString()}원`
-    ).join('\n')
+    )
 
-    // 총액 계산
-    const total = cart.reduce((sum, item) => sum + item.subtotal, 0)
+    // 소계 계산
+    const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0)
+    
+    // 배송비 계산
+    const shippingFee = subtotal > 0 && subtotal < 100000 ? 3500 : 0
+    
+    // 배송비가 있으면 항목에 추가
+    if (shippingFee > 0) {
+      itemsList.push(`배송비 ${shippingFee.toLocaleString()}원`)
+    }
+
+    const itemsText = itemsList.join('\n')
+
+    // 총액 계산 (소계 + 배송비)
+    const total = subtotal + shippingFee
 
     // 템플릿 변수 치환
     let settlement = template
@@ -246,6 +272,8 @@ export const useLiveStore = defineStore('live', () => {
     filteredProducts,
     confirmedCustomers,
     currentCart,
+    currentCartSubtotal,
+    currentCartShippingFee,
     currentCartTotal,
     
     // Actions
