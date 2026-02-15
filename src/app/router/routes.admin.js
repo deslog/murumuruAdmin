@@ -27,6 +27,11 @@ export const adminRoutes = [
         name: 'LiveRoom',
         component: () => import('@/pages/LiveCommerce/LiveRoomPage.vue'),
       },
+      {
+        path: 'settlement-template',
+        name: 'SettlementTemplate',
+        component: () => import('@/pages/SettlementTemplate/SettlementTemplatePage.vue'),
+      },
     ],
   },
 ]

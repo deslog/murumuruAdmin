@@ -12,10 +12,24 @@ export const useLiveStore = defineStore('live', () => {
   const selectedCustomerId = ref(null)
   const quantityDraft = ref(1)
   const cartsByCustomer = ref({})
+  const productSearchKeyword = ref('') // 상품 검색어
+  const settlementTemplate = ref('') // 정산서 템플릿
 
   // ===== Getters =====
   const selectedProduct = computed(() => {
     return products.value.find(p => p.id === selectedProductId.value) || null
+  })
+
+  // 필터링된 상품 목록
+  const filteredProducts = computed(() => {
+    if (!productSearchKeyword.value) {
+      return products.value
+    }
+    const keyword = productSearchKeyword.value.toLowerCase()
+    return products.value.filter(p => 
+      p.name.toLowerCase().includes(keyword) || 
+      p.option.toLowerCase().includes(keyword)
+    )
   })
 
   const confirmedCustomers = computed(() => {
@@ -55,6 +69,16 @@ export const useLiveStore = defineStore('live', () => {
     return newRoom.id
   }
 
+  const updateRoomStatus = (roomId, status) => {
+    const room = rooms.value.find(r => r.id === roomId)
+    if (room) {
+      room.status = status
+    }
+    if (currentRoom.value && currentRoom.value.id === roomId) {
+      currentRoom.value.status = status
+    }
+  }
+
   const loadRoom = (roomId) => {
     const room = rooms.value.find(r => r.id === roomId)
     if (room) {
@@ -74,6 +98,14 @@ export const useLiveStore = defineStore('live', () => {
 
   const selectProduct = (productId) => {
     selectedProductId.value = productId
+  }
+
+  const setProductSearchKeyword = (keyword) => {
+    productSearchKeyword.value = keyword
+  }
+
+  const clearProductSearch = () => {
+    productSearchKeyword.value = ''
   }
 
   // ===== 고객 관련 액션 =====
@@ -164,6 +196,39 @@ export const useLiveStore = defineStore('live', () => {
     return cart.reduce((sum, item) => sum + item.subtotal, 0)
   }
 
+  // ===== 정산서 관련 액션 =====
+  const setSettlementTemplate = (template) => {
+    settlementTemplate.value = template
+  }
+
+  const generateSettlement = (customerId) => {
+    const cart = cartsByCustomer.value[customerId] || []
+    if (cart.length === 0) {
+      return '장바구니가 비어있습니다.'
+    }
+
+    const template = settlementTemplate.value || `{customerName} 고객님의 정산서
+{items}
+총금액: {totalAmount}원
+입니다.`
+
+    // 상품 목록 생성
+    const itemsText = cart.map(item => 
+      `${item.productName} (${item.option}) ${item.qty}개 ${item.price.toLocaleString()}원`
+    ).join('\n')
+
+    // 총액 계산
+    const total = cart.reduce((sum, item) => sum + item.subtotal, 0)
+
+    // 템플릿 변수 치환
+    let settlement = template
+      .replace('{customerName}', customerId)
+      .replace('{items}', itemsText)
+      .replace('{totalAmount}', total.toLocaleString())
+
+    return settlement
+  }
+
   return {
     // State
     rooms,
@@ -173,9 +238,12 @@ export const useLiveStore = defineStore('live', () => {
     selectedCustomerId,
     quantityDraft,
     cartsByCustomer,
+    productSearchKeyword,
+    settlementTemplate,
     
     // Getters
     selectedProduct,
+    filteredProducts,
     confirmedCustomers,
     currentCart,
     currentCartTotal,
@@ -184,8 +252,11 @@ export const useLiveStore = defineStore('live', () => {
     setRooms,
     createRoom,
     loadRoom,
+    updateRoomStatus,
     setProducts,
     selectProduct,
+    setProductSearchKeyword,
+    clearProductSearch,
     selectCustomer,
     setQuantity,
     increaseQuantity,
@@ -194,5 +265,7 @@ export const useLiveStore = defineStore('live', () => {
     removeFromCart,
     updateCartItemQty,
     getCustomerTotal,
+    setSettlementTemplate,
+    generateSettlement,
   }
 })

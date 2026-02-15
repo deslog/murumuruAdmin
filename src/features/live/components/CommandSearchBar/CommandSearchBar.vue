@@ -9,12 +9,12 @@
         <input
           v-model="commandInput"
           type="text"
-          placeholder="/고객ID 입력 후 Enter"
+          placeholder="/고객ID 또는 상품명 입력 후 Enter"
           class="search-input"
           @keyup.enter="handleCommand"
           @input="handleInputChange"
         />
-        <!-- 자동완성 드롭다운 -->
+        <!-- 자동완성 드롭다운 - 고객 -->
         <div v-if="showAutocomplete && filteredCustomers.length > 0" class="autocomplete-dropdown">
           <div
             v-for="customer in filteredCustomers"
@@ -24,6 +24,18 @@
           >
             <span class="customer-id">{{ customer.id }}</span>
             <span class="customer-info">{{ customer.itemCount }}개 · {{ formatPrice(customer.total) }}원</span>
+          </div>
+        </div>
+        <!-- 자동완성 드롭다운 - 상품 -->
+        <div v-if="showProductAutocomplete && filteredProductList.length > 0" class="autocomplete-dropdown">
+          <div
+            v-for="product in filteredProductList"
+            :key="product.id"
+            class="autocomplete-item"
+            @click="selectProductFromAutocomplete(product)"
+          >
+            <span class="product-name">{{ product.name }} - {{ product.option }}</span>
+            <span class="product-price">{{ formatPrice(product.price) }}원</span>
           </div>
         </div>
       </div>
@@ -99,6 +111,7 @@
           </div>
         </div>
       </div>
+
     </div>
   </div>
 </template>
@@ -111,6 +124,7 @@ import { formatPrice } from '@/shared/utils/format'
 const liveStore = useLiveStore()
 const commandInput = ref('')
 const showAutocomplete = ref(false)
+const showProductAutocomplete = ref(false)
 
 // 자동완성용 필터링된 고객 목록
 const filteredCustomers = computed(() => {
@@ -128,12 +142,33 @@ const filteredCustomers = computed(() => {
   )
 })
 
+// 자동완성용 필터링된 상품 목록
+const filteredProductList = computed(() => {
+  if (commandInput.value.startsWith('/') || !commandInput.value.trim()) {
+    return []
+  }
+  
+  const keyword = commandInput.value.toLowerCase()
+  return liveStore.products.filter(p => 
+    p.name.toLowerCase().includes(keyword) || 
+    p.option.toLowerCase().includes(keyword)
+  ).slice(0, 10) // 최대 10개만 표시
+})
+
 const handleInputChange = () => {
-  // /로 시작하면 자동완성 표시
+  // /로 시작하면 고객 자동완성 표시
   if (commandInput.value.startsWith('/')) {
     showAutocomplete.value = true
-  } else {
+    showProductAutocomplete.value = false
+  } 
+  // 일반 텍스트면 상품 자동완성 표시
+  else if (commandInput.value.trim()) {
     showAutocomplete.value = false
+    showProductAutocomplete.value = true
+  } 
+  else {
+    showAutocomplete.value = false
+    showProductAutocomplete.value = false
   }
 }
 
@@ -141,6 +176,13 @@ const selectCustomerFromAutocomplete = (customerId) => {
   liveStore.selectCustomer(customerId)
   commandInput.value = ''
   showAutocomplete.value = false
+}
+
+const selectProductFromAutocomplete = (product) => {
+  liveStore.selectProduct(product.id)
+  liveStore.setProductSearchKeyword(commandInput.value)
+  commandInput.value = ''
+  showProductAutocomplete.value = false
 }
 
 const handleCommand = () => {
@@ -155,32 +197,35 @@ const handleCommand = () => {
       showAutocomplete.value = false
     }
   }
+  // 일반 텍스트면 상품 검색
+  else if (input) {
+    liveStore.setProductSearchKeyword(input)
+    commandInput.value = ''
+    showProductAutocomplete.value = false
+  }
 }
 
 const handleConfirm = () => {
-  const success = liveStore.addToCart()
-  if (success) {
-    commandInput.value = ''
-  } else {
-    alert('고객과 상품을 먼저 선택해주세요.')
+  if (liveStore.selectedCustomerId && liveStore.selectedProduct) {
+    liveStore.addToCart()
   }
 }
 
 const handleRemoveItem = (productId) => {
-  if (confirm('이 상품을 장바구니에서 제거하시겠습니까?')) {
-    liveStore.removeFromCart(liveStore.selectedCustomerId, productId)
-  }
+  liveStore.removeFromCart(productId)
 }
 </script>
 
 <style scoped>
 .command-search-bar {
-  background: var(--bg-primary);
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-sm);
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: var(--bg-primary);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  min-height: 0;
 }
 
 .panel-header {
@@ -204,7 +249,6 @@ const handleRemoveItem = (productId) => {
 }
 
 .search-section {
-  width: 100%;
   position: relative;
 }
 
@@ -214,11 +258,11 @@ const handleRemoveItem = (productId) => {
   border: 2px solid var(--border-color);
   border-radius: var(--border-radius);
   font-size: var(--font-size-base);
-  outline: none;
   transition: border-color 0.2s;
 }
 
 .search-input:focus {
+  outline: none;
   border-color: var(--color-primary);
 }
 
@@ -227,24 +271,24 @@ const handleRemoveItem = (productId) => {
   top: 100%;
   left: 0;
   right: 0;
-  margin-top: var(--spacing-xs);
-  background: var(--bg-primary);
-  border: 2px solid var(--color-primary);
+  margin-top: 4px;
+  background: white;
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
-  box-shadow: var(--shadow-md);
-  max-height: 200px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-height: 300px;
   overflow-y: auto;
-  z-index: 100;
+  z-index: 1000;
 }
 
 .autocomplete-item {
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-md);
   cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  transition: background 0.2s;
   border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s;
 }
 
 .autocomplete-item:last-child {
@@ -265,37 +309,49 @@ const handleRemoveItem = (productId) => {
   color: var(--text-secondary);
 }
 
+.product-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.product-price {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
 .selection-section {
   background: var(--bg-secondary);
   border-radius: var(--border-radius);
-  padding: var(--spacing-md);
+  padding: var(--spacing-lg);
 }
 
 .selection-header h3 {
   font-size: var(--font-size-base);
   font-weight: 600;
   margin-bottom: var(--spacing-md);
+  color: var(--text-primary);
 }
 
 .selection-content {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
 }
 
 .info-row {
   display: flex;
+  align-items: center;
   gap: var(--spacing-sm);
-  font-size: var(--font-size-sm);
 }
 
-.label {
+.info-row .label {
   font-weight: 600;
   color: var(--text-secondary);
   min-width: 60px;
 }
 
-.value {
+.info-row .value {
   color: var(--text-primary);
 }
 
@@ -305,23 +361,26 @@ const handleRemoveItem = (productId) => {
   gap: var(--spacing-sm);
 }
 
+.quantity-control .label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 60px;
+}
+
 .quantity-buttons {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  background: var(--bg-primary);
-  border-radius: var(--border-radius);
-  padding: var(--spacing-xs);
 }
 
 .quantity-buttons button {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border: 1px solid var(--border-color);
+  background: white;
   border-radius: var(--border-radius);
-  background: var(--bg-primary);
   cursor: pointer;
-  font-weight: 600;
+  font-size: var(--font-size-lg);
   transition: all 0.2s;
 }
 
@@ -332,51 +391,51 @@ const handleRemoveItem = (productId) => {
 }
 
 .quantity-value {
-  min-width: 30px;
+  min-width: 40px;
   text-align: center;
   font-weight: 600;
+  font-size: var(--font-size-base);
 }
 
 .confirm-button {
   margin-top: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-lg);
+  padding: var(--spacing-md);
   background: var(--color-primary);
   color: white;
   border: none;
   border-radius: var(--border-radius);
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: opacity 0.2s;
 }
 
 .confirm-button:hover {
-  background: var(--color-primary-dark);
+  opacity: 0.9;
 }
 
 .cart-section {
   background: var(--bg-secondary);
   border-radius: var(--border-radius);
-  padding: var(--spacing-md);
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  padding: var(--spacing-lg);
 }
 
 .cart-header h3 {
   font-size: var(--font-size-base);
   font-weight: 600;
   margin-bottom: var(--spacing-md);
+  color: var(--text-primary);
 }
 
 .cart-body {
-  flex: 1;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
 }
 
 .empty-cart {
   text-align: center;
-  color: var(--text-secondary);
   padding: var(--spacing-xl);
+  color: var(--text-secondary);
 }
 
 .cart-items {
@@ -388,9 +447,9 @@ const handleRemoveItem = (productId) => {
 .cart-item {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm);
-  background: var(--bg-primary);
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: white;
   border-radius: var(--border-radius);
   position: relative;
 }
@@ -401,18 +460,19 @@ const handleRemoveItem = (productId) => {
 
 .item-name {
   font-weight: 600;
-  font-size: var(--font-size-sm);
-  margin-bottom: var(--spacing-xs);
+  color: var(--text-primary);
+  margin-bottom: 4px;
 }
 
 .item-detail {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   color: var(--text-secondary);
 }
 
 .item-price {
   font-weight: 600;
   color: var(--color-primary);
+  margin-right: var(--spacing-sm);
 }
 
 .remove-button {
@@ -433,16 +493,23 @@ const handleRemoveItem = (productId) => {
 }
 
 .cart-total {
-  margin-top: var(--spacing-md);
-  padding-top: var(--spacing-md);
-  border-top: 2px solid var(--border-color);
   display: flex;
   justify-content: space-between;
-  font-size: var(--font-size-lg);
+  padding: var(--spacing-md);
+  background: white;
+  border-radius: var(--border-radius);
+  border-top: 2px solid var(--border-color);
+  margin-top: var(--spacing-sm);
+}
+
+.total-label {
   font-weight: 600;
+  color: var(--text-secondary);
 }
 
 .total-value {
+  font-weight: 700;
+  font-size: var(--font-size-lg);
   color: var(--color-primary);
 }
 </style>

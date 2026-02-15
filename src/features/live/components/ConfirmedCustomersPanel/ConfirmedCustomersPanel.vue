@@ -13,16 +13,24 @@
           :key="customer.id"
           class="customer-item"
           :class="{ selected: customer.id === liveStore.selectedCustomerId }"
-          @click="handleSelectCustomer(customer.id)"
         >
-          <div class="customer-info">
+          <div class="customer-info" @click="handleSelectCustomer(customer.id)">
             <h3>{{ customer.id }}</h3>
             <p class="customer-stats">
               {{ customer.itemCount }}개 상품
             </p>
           </div>
-          <div class="customer-total">
-            {{ formatPrice(customer.total) }}원
+          <div class="customer-actions">
+            <div class="customer-total">
+              {{ formatPrice(customer.total) }}원
+            </div>
+            <button 
+              class="settlement-button"
+              @click="handleGenerateSettlement(customer.id)"
+              title="정산서 생성"
+            >
+              📄
+            </button>
           </div>
         </div>
       </div>
@@ -33,11 +41,23 @@
 <script setup>
 import { useLiveStore } from '@/features/live/store'
 import { formatPrice } from '@/shared/utils/format'
+import { showToast } from '@/shared/utils/toast'
 
 const liveStore = useLiveStore()
 
 const handleSelectCustomer = (customerId) => {
   liveStore.selectCustomer(customerId)
+}
+
+const handleGenerateSettlement = (customerId) => {
+  const settlement = liveStore.generateSettlement(customerId)
+  
+  // 클립보드에 복사
+  navigator.clipboard.writeText(settlement).then(() => {
+    showToast(`${customerId} 님의 정산서가 클립보드에 복사되었습니다!`)
+  }).catch(() => {
+    showToast('클립보드 복사에 실패했습니다.')
+  })
 }
 </script>
 
@@ -49,6 +69,8 @@ const handleSelectCustomer = (customerId) => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .panel-header {
@@ -86,11 +108,11 @@ const handleSelectCustomer = (customerId) => {
   padding: var(--spacing-md);
   border: 2px solid var(--border-color);
   border-radius: var(--border-radius);
-  cursor: pointer;
   transition: all 0.2s;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--spacing-md);
 }
 
 .customer-item:hover {
@@ -101,6 +123,11 @@ const handleSelectCustomer = (customerId) => {
 .customer-item.selected {
   border-color: var(--color-primary);
   background: rgba(59, 130, 246, 0.05);
+}
+
+.customer-info {
+  flex: 1;
+  cursor: pointer;
 }
 
 .customer-info h3 {
@@ -115,9 +142,36 @@ const handleSelectCustomer = (customerId) => {
   margin: 0;
 }
 
+.customer-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
 .customer-total {
   font-size: var(--font-size-lg);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-primary);
+}
+
+.settlement-button {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.settlement-button:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  transform: scale(1.05);
 }
 </style>

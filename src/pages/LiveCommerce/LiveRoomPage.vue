@@ -1,8 +1,26 @@
 <template>
   <div class="live-room-page">
     <header class="page-header">
-      <button class="back-button" @click="goBack">← 목록으로</button>
-      <h1>{{ roomTitle }}</h1>
+      <div class="header-left">
+        <button class="back-button" @click="goBack">← 목록으로</button>
+        <h1>{{ roomTitle }}</h1>
+      </div>
+      <div class="header-right">
+        <button 
+          class="status-button"
+          :class="{ active: liveStore.currentRoom?.status === 'active' }"
+          @click="handleStatusChange('active')"
+        >
+          진행중
+        </button>
+        <button 
+          class="status-button"
+          :class="{ ended: liveStore.currentRoom?.status === 'ended' }"
+          @click="handleStatusChange('ended')"
+        >
+          종료
+        </button>
+      </div>
     </header>
     <div class="page-content">
       <div class="live-panels">
@@ -38,6 +56,12 @@ const goBack = () => {
   router.push({ name: 'LiveCommerce' })
 }
 
+const handleStatusChange = (status) => {
+  if (roomId.value) {
+    liveStore.updateRoomStatus(roomId.value, status)
+  }
+}
+
 onMounted(() => {
   liveStore.loadRoom(roomId.value)
   // Mock 상품 데이터 로드
@@ -61,7 +85,19 @@ onMounted(() => {
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--spacing-lg);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+}
+
+.header-right {
+  display: flex;
+  gap: var(--spacing-sm);
 }
 
 .back-button {
@@ -84,10 +120,38 @@ onMounted(() => {
   color: var(--text-primary);
 }
 
+.status-button {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.status-button:hover {
+  border-color: var(--color-primary);
+}
+
+.status-button.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.status-button.ended {
+  background: var(--text-secondary);
+  border-color: var(--text-secondary);
+  color: white;
+}
+
 .page-content {
   flex: 1;
   overflow: hidden;
-  padding: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  min-height: 0;
 }
 
 .live-panels {
@@ -95,5 +159,6 @@ onMounted(() => {
   grid-template-columns: 1fr 1.5fr 1fr;
   gap: var(--spacing-lg);
   height: 100%;
+  overflow: hidden;
 }
 </style>

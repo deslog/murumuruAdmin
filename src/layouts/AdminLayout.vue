@@ -14,6 +14,9 @@
         <router-link to="/live-commerce" class="nav-item">
           라이브커머스
         </router-link>
+        <router-link to="/settlement-template" class="nav-item sub-item">
+          ∟ 정산서형태
+        </router-link>
       </nav>
     </aside>
     <main class="main-content">
@@ -61,6 +64,10 @@
   padding: var(--spacing-md);
   border-radius: var(--border-radius);
   transition: background-color 0.2s;
+  text-decoration: none;
+  color: white;
+  display: block;
+  cursor: pointer;
 }
 
 .nav-item:hover {
@@ -69,6 +76,11 @@
 
 .nav-item.router-link-active {
   background-color: var(--color-primary);
+}
+
+.nav-item.sub-item {
+  padding-left: calc(var(--spacing-md) + var(--spacing-lg));
+  font-size: var(--font-size-sm);
 }
 
 .main-content {

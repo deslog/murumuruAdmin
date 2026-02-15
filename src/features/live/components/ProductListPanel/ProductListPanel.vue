@@ -2,10 +2,20 @@
   <div class="product-list-panel">
     <div class="panel-header">
       <h2>상품 리스트</h2>
+      <button 
+        v-if="liveStore.productSearchKeyword" 
+        class="clear-search-btn"
+        @click="liveStore.clearProductSearch()"
+      >
+        전체보기
+      </button>
     </div>
     <div class="panel-body">
+      <div v-if="liveStore.productSearchKeyword" class="search-info">
+        "{{ liveStore.productSearchKeyword }}" 검색 결과 ({{ liveStore.filteredProducts.length }}개)
+      </div>
       <div
-        v-for="product in liveStore.products"
+        v-for="product in liveStore.filteredProducts"
         :key="product.id"
         class="product-item"
         :class="{ selected: product.id === liveStore.selectedProductId }"
@@ -34,17 +44,23 @@ const handleSelectProduct = (productId) => {
 
 <style scoped>
 .product-list-panel {
-  background: var(--bg-primary);
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-sm);
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: var(--bg-primary);
+  border-right: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  min-height: 0;
 }
 
 .panel-header {
   padding: var(--spacing-lg);
   border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .panel-header h2 {
@@ -53,14 +69,41 @@ const handleSelectProduct = (productId) => {
   color: var(--text-primary);
 }
 
+.clear-search-btn {
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clear-search-btn:hover {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
 .panel-body {
   flex: 1;
   overflow-y: auto;
   padding: var(--spacing-md);
 }
 
+.search-info {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-primary);
+  color: white;
+  border-radius: var(--border-radius);
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
 .product-item {
   padding: var(--spacing-md);
+  background: white;
   border: 2px solid var(--border-color);
   border-radius: var(--border-radius);
   margin-bottom: var(--spacing-sm);
@@ -70,24 +113,26 @@ const handleSelectProduct = (productId) => {
 
 .product-item:hover {
   border-color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .product-item.selected {
   border-color: var(--color-primary);
-  background: rgba(59, 130, 246, 0.05);
+  background: rgba(79, 70, 229, 0.05);
 }
 
 .product-info h3 {
   font-size: var(--font-size-base);
   font-weight: 600;
-  margin-bottom: var(--spacing-xs);
+  color: var(--text-primary);
+  margin-bottom: 8px;
 }
 
 .product-price {
+  font-size: var(--font-size-base);
+  font-weight: 700;
   color: var(--color-primary);
-  font-weight: 600;
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: 4px;
 }
 
 .product-stock {
