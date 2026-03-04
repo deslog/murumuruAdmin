@@ -46,7 +46,6 @@ import LiveRoomList from '@/features/live/components/LiveRoomList/LiveRoomList.v
 import AppModal from '@/shared/components/AppModal/AppModal.vue'
 import AppInput from '@/shared/components/AppInput/AppInput.vue'
 import AppButton from '@/shared/components/AppButton/AppButton.vue'
-import { mockRooms } from './LiveCommerce.mock'
 
 const router = useRouter()
 const liveStore = useLiveStore()
@@ -58,23 +57,25 @@ const goToRoom = (roomId) => {
   router.push({ name: 'LiveRoom', params: { roomId } })
 }
 
-const handleCreateRoom = () => {
+const handleCreateRoom = async () => {
   if (!newRoomTitle.value.trim()) {
     alert('라방 제목을 입력해주세요.')
     return
   }
   
-  const roomId = liveStore.createRoom(newRoomTitle.value)
-  newRoomTitle.value = ''
-  showCreateModal.value = false
-  
-  // 생성 후 바로 이동
-  goToRoom(roomId)
+  const roomId = await liveStore.createRoom(newRoomTitle.value)
+  if (roomId) {
+    newRoomTitle.value = ''
+    showCreateModal.value = false
+    
+    // 생성 후 바로 이동
+    goToRoom(roomId)
+  }
 }
 
-onMounted(() => {
-  // Mock 데이터 로드
-  liveStore.setRooms(mockRooms)
+onMounted(async () => {
+  // Firestore에서 라방 목록 로드
+  await liveStore.loadRooms()
 })
 </script>
 

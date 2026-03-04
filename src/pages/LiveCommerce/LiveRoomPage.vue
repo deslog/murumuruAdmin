@@ -64,10 +64,8 @@ const handleStatusChange = (status) => {
 
 onMounted(() => {
   liveStore.loadRoom(roomId.value)
-  // Mock 상품 데이터 로드
-  import('./LiveCommerce.mock').then(module => {
-    liveStore.setProducts(module.mockProducts)
-  })
+  // 상품관리의 실제 상품 데이터 로드
+  liveStore.loadProductsFromStore()
 })
 </script>
 

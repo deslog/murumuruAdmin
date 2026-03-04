@@ -1,11 +1,11 @@
 export const adminRoutes = [
   {
-    path: '/',
+    path: '/:storeId',
     component: () => import('@/layouts/AdminLayout.vue'),
     children: [
       {
         path: '',
-        redirect: '/wholesale-orders',
+        redirect: to => `/${to.params.storeId}/wholesale-orders`,
       },
       {
         path: 'wholesale-orders',

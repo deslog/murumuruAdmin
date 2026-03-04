@@ -1,7 +1,7 @@
 <template>
   <div class="command-search-bar">
     <div class="panel-header">
-      <h2>명령어 입력</h2>
+      <h2>명령어 입력<span v-if="liveStore.selectedCustomerId" class="selected-customer"> - {{ liveStore.selectedCustomerId }}</span></h2>
     </div>
     <!-- 검색창 -->
     <div class="search-section">
@@ -330,10 +330,25 @@ const handleCommand = () => {
   }
 }
 
-const handleConfirm = () => {
+const handleConfirm = async () => {
   if (liveStore.selectedCustomerId && liveStore.selectedProduct) {
-    showToast(`${liveStore.selectedProduct.name} - ${liveStore.selectedProduct.option} 장바구니에 추가되었습니다!`)
-    liveStore.addToCart()
+    try {
+      const success = await liveStore.addToCart()
+      if (success) {
+        showToast(`${liveStore.selectedProduct.name} - ${liveStore.selectedProduct.option} 장바구니에 추가되었습니다!`)
+        
+        // 확정고객 목록에 강제로 추가 (즉시 표시)
+        liveStore.addConfirmedCustomer(liveStore.selectedCustomerId)
+        
+        // 상품 선택 해제
+        liveStore.selectProduct(null)
+      } else {
+        showToast('장바구니 추가에 실패했습니다.', 'error')
+      }
+    } catch (error) {
+      console.error('확정 처리 실패:', error)
+      showToast('장바구니 추가 중 오류가 발생했습니다.', 'error')
+    }
   }
 }
 
@@ -383,6 +398,11 @@ const handleRemoveItem = (productId) => {
   font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.selected-customer {
+  color: var(--color-primary);
+  font-weight: 700;
 }
 
 .panel-body {

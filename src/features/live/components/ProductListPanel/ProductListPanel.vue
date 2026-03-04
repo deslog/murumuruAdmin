@@ -14,6 +14,16 @@
       <div v-if="liveStore.productSearchKeyword" class="search-info">
         "{{ liveStore.productSearchKeyword }}" 검색 결과 ({{ liveStore.filteredProducts.length }}개)
       </div>
+      <!-- 디버깅 정보 -->
+      <div class="debug-info" style="background: #f0f0f0; padding: 10px; margin-bottom: 10px; font-size: 12px;">
+        <p>전체 상품: {{ liveStore.products.length }}개</p>
+        <p>필터된 상품: {{ liveStore.filteredProducts.length }}개</p>
+        <p>검색어: "{{ liveStore.productSearchKeyword }}"</p>
+      </div>
+      <div v-if="liveStore.filteredProducts.length === 0" class="empty-state">
+        <p v-if="!liveStore.products.length">상품이 없습니다. (총 상품: {{ liveStore.products.length }}개)</p>
+        <p v-else>검색 결과가 없습니다. (전체 상품: {{ liveStore.products.length }}개)</p>
+      </div>
       <div
         v-for="product in liveStore.filteredProducts"
         :key="product.id"

@@ -42,9 +42,12 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/app/config/firebase";
+import { collection, getDocs, limit, query } from "firebase/firestore";
+import { auth, db } from "@/app/config/firebase";
+import { useAuthStore } from "@/app/store/auth";
 
 const router = useRouter();
+const authStore = useAuthStore();
 const email = ref("");
 const password = ref("");
 const loading = ref(false);
@@ -55,7 +58,29 @@ async function onSubmit() {
   loading.value = true;
 
   try {
-    await signInWithEmailAndPassword(auth, email.value, password.value);
+    const userCredential = await signInWithEmailAndPassword(auth, email.value, password.value);
+    console.log('[Login] 로그인 성공, uid:', userCredential.user.uid);
+    
+    // 사용자의 스토어 자동 로드
+    const storesRef = collection(db, 'users', userCredential.user.uid, 'stores');
+    const q = query(storesRef, limit(1));
+    const snapshot = await getDocs(q);
+    
+    console.log('[Login] 스토어 조회 결과:', snapshot.empty ? '없음' : '있음', snapshot.size);
+    
+    if (!snapshot.empty) {
+      const storeData = snapshot.docs[0].data();
+      console.log('[Login] 스토어 데이터:', storeData);
+      authStore.setCurrentStore(storeData.storeId, storeData.storeName);
+      console.log('[Login] authStore.currentStoreId:', authStore.currentStoreId);
+    } else {
+      // 스토어가 없으면 기본 스토어 생성 또는 설정
+      console.warn('[Login] 스토어 정보가 없습니다. 기본 스토어를 설정합니다.');
+      const defaultStoreId = 'store_' + userCredential.user.uid;
+      authStore.setCurrentStore(defaultStoreId, '내 스토어');
+      console.log('[Login] 기본 스토어 설정:', defaultStoreId);
+    }
+    
     // ✅ 로그인 성공 - 관리자 페이지로 이동
     router.push("/");
   } catch (err) {

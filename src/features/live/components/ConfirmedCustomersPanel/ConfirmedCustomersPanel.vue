@@ -49,15 +49,22 @@ const handleSelectCustomer = (customerId) => {
   liveStore.selectCustomer(customerId)
 }
 
-const handleGenerateSettlement = (customerId) => {
-  const settlement = liveStore.generateSettlement(customerId)
-  
-  // 클립보드에 복사
-  navigator.clipboard.writeText(settlement).then(() => {
+const handleGenerateSettlement = async (customerId) => {
+  try {
+    const settlement = await liveStore.generateSettlement(customerId)
+    
+    if (!settlement || settlement === '장바구니가 비어있습니다.' || settlement.includes('오류')) {
+      showToast(settlement || '정산서 생성에 실패했습니다.', 'error')
+      return
+    }
+    
+    // 클립보드에 복사
+    await navigator.clipboard.writeText(settlement)
     showToast(`${customerId} 님의 정산서가 클립보드에 복사되었습니다!`)
-  }).catch(() => {
-    showToast('클립보드 복사에 실패했습니다.')
-  })
+  } catch (error) {
+    console.error('정산서 생성/복사 실패:', error)
+    showToast('정산서 복사에 실패했습니다.', 'error')
+  }
 }
 </script>
 

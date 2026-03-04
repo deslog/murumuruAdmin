@@ -3,18 +3,19 @@
     <aside class="sidebar">
       <div class="logo">
         <h1>Murumuru Admin</h1>
+        <p class="store-name">{{ storeName }}</p>
       </div>
       <nav class="nav-menu">
-        <router-link to="/wholesale-orders" class="nav-item">
+        <router-link :to="`/${storeId}/wholesale-orders`" class="nav-item">
           도매주문현황
         </router-link>
-        <router-link to="/products" class="nav-item">
+        <router-link :to="`/${storeId}/products`" class="nav-item">
           상품관리
         </router-link>
-        <router-link to="/live-commerce" class="nav-item">
+        <router-link :to="`/${storeId}/live-commerce`" class="nav-item">
           라이브커머스
         </router-link>
-        <router-link to="/settlement-template" class="nav-item sub-item">
+        <router-link :to="`/${storeId}/settlement-template`" class="nav-item sub-item">
           ∟ 정산서형태
         </router-link>
       </nav>
@@ -26,6 +27,12 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { useAuthStore } from '@/app/store/auth'
+
+const authStore = useAuthStore()
+const storeName = computed(() => authStore.currentStoreName || '내 스토어')
+const storeId = computed(() => authStore.currentStoreId || 'default')
 </script>
 
 <style scoped>
